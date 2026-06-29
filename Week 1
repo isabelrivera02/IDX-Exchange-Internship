@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jun 29 11:21:15 2026
+
+@author: isabelrivera
+"""
+
+import pandas as pd
+import os
+import glob
+
+folder = "/Users/isabelrivera/Documents/IDX Summer 2026/01:24 - 05:26 Data"
+
+listing_files = sorted(
+    glob.glob(os.path.join(folder, "CRMLSListing*.csv"))
+)
+
+print("Listing files found:", len(listing_files))
+
+listing_dfs = []
+
+for listing_file in listing_files:
+    print("Loading:", os.path.basename(listing_file))
+    df = pd.read_csv(listing_file, low_memory=False)
+    listing_dfs.append(df)
+
+combined_listings_df = pd.concat(listing_dfs, ignore_index=True)
+print("Listings after concatenation:", len(combined_listings_df))
+
+listings_before_filter = len(combined_listings_df)
+
+print("Listings before Residential filter:", listings_before_filter)
+
+combined_listings_df = combined_listings_df[
+    combined_listings_df["PropertyType"].astype(str).str.strip().str.lower()
+    == "residential"
+]
+
+listings_after_filter = len(combined_listings_df)
+
+print("Listings after Residential filter:", listings_after_filter)
+
+listing_csv = os.path.join(folder, "listings.csv")
+
+combined_listings_df.to_csv(listing_csv, index=False)
+
+print("Saved listings file as:", listing_csv)
+
+sold_files = sorted(
+    glob.glob(os.path.join(folder, "CRMLSSold*.csv"))
+)
+
+# Remove files that end with _filled.csv so months are not duplicated
+sold_files = [
+    file for file in sold_files
+    if "_filled" not in os.path.basename(file)
+]
+
+print("\nSold files found:", len(sold_files))
+
+
+# Load all sold CSV files into a list of DataFrames
+sold_dfs = []
+
+for sold_file in sold_files:
+    print("Loading:", os.path.basename(sold_file))
+    df = pd.read_csv(sold_file, low_memory=False)
+    sold_dfs.append(df)
+    
+# Combine all monthly sold DataFrames into one dataset
+combined_sold_df = pd.concat(sold_dfs, ignore_index=True)
+
+# Row count after concatenation
+print("Sold after concatenation:", len(combined_sold_df))
+
+
+# Record row count before Residential filtering
+sold_before_filter = len(combined_sold_df)
+
+print("Sold before Residential filter:", sold_before_filter)
+
+
+# Keep only Residential sold properties
+combined_sold_df = combined_sold_df[
+    combined_sold_df["PropertyType"].astype(str).str.strip().str.lower()
+    == "residential"
+]
+
+
+# Record row count after Residential filtering
+sold_after_filter = len(combined_sold_df)
+
+print("Sold after Residential filter:", sold_after_filter)
+
+
+# Save the filtered sold dataset as a CSV
+sold_csv = os.path.join(folder, "sold.csv")
+
+combined_sold_df.to_csv(sold_csv, index=False)
+
+print("Saved sold file as:", sold_csv)
+
+print("\nWeek 1 aggregation complete.")
